@@ -1,0 +1,56 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+        pip install sonar-scanner coverage[toml]
+    
+    - name: Run tests with coverage
+      run: |
+        python -m pytest tests/ --cov=src --cov-report=xml --cov-report=html
+    
+    - name: Generate coverage badge
+      run: |
+        coverage-badge -o coverage.svg
+    
+    - name: Run complexity analysis
+      run: |
+        pip install radon
+        radon cc src --json > complexity-report.json
+        radon mi src --json > maintainability-report.json
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports
+        path: |
+          coverage.xml
+          htmlcov/
+          coverage.svg
+    
+    - name: Upload quality reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: quality-reports
+        path: |
+          complexity-report.json
+          maintainability-report.json

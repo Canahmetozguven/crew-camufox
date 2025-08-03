@@ -1,0 +1,55 @@
+name: Dependency Check
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety pip-audit
+        pip install -e .
+    
+    - name: Run Safety check
+      run: |
+        safety check --json --output safety-report.json
+        safety check  # Also run in normal mode for readable output
+    
+    - name: Run pip-audit
+      run: |
+        pip-audit --format=json --output=pip-audit-report.json
+        pip-audit  # Also run in normal mode for readable output
+    
+    - name: Upload reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-reports
+        path: |
+          safety-report.json
+          pip-audit-report.json
+    
+    - name: Create issue on vulnerabilities
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: 'Security vulnerabilities detected in dependencies',
+            body: 'Automated dependency check found security vulnerabilities. Please review the workflow logs and update dependencies accordingly.',
+            labels: ['security', 'dependencies', 'automated']
+          })
