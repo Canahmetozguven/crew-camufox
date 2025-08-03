@@ -71,7 +71,7 @@ class SearchSettings(BaseModel):
     serp_api_key: Optional[str] = None
 
     # Search Configuration
-    max_sources: int = 15
+    max_sources: int = 25  # Increased from 15 for more comprehensive reports
     request_delay: float = 1.0
     timeout: int = 30
 
@@ -88,7 +88,7 @@ class SearchSettings(BaseModel):
             google_cse_id=os.getenv("GOOGLE_CSE_ID"),
             bing_api_key=os.getenv("BING_API_KEY"),
             serp_api_key=os.getenv("SERP_API_KEY"),
-            max_sources=int(os.getenv("MAX_SOURCES", "15")),
+            max_sources=int(os.getenv("MAX_SOURCES", "25")),  # Increased default
             request_delay=float(os.getenv("REQUEST_DELAY", "1.0")),
             timeout=int(os.getenv("SEARCH_TIMEOUT", "30")),
             enable_academic_search=os.getenv("ENABLE_ACADEMIC_SEARCH", "true").lower() == "true",
@@ -172,38 +172,38 @@ class ResearchConfig:
 
     DEPTH_CONFIGS = {
         ResearchDepth.SURFACE: {
-            "max_time_minutes": 15,
-            "max_sources": 8,
-            "sources_per_round": 3,
-            "deep_dive_sources": 2,
-            "search_rounds": 1,
+            "max_time_minutes": 20,  # Increased time
+            "max_sources": 12,       # Increased from 8
+            "sources_per_round": 4,  # Increased from 3
+            "deep_dive_sources": 4,  # Increased from 2
+            "search_rounds": 2,      # Increased from 1
             "fact_check_enabled": False,
             "description": "Quick overview research",
         },
         ResearchDepth.MEDIUM: {
-            "max_time_minutes": 30,
-            "max_sources": 12,
-            "sources_per_round": 4,
-            "deep_dive_sources": 4,
-            "search_rounds": 2,
+            "max_time_minutes": 45,  # Increased time
+            "max_sources": 18,       # Increased from 12
+            "sources_per_round": 6,  # Increased from 4
+            "deep_dive_sources": 8,  # Increased from 4
+            "search_rounds": 3,      # Increased from 2
             "fact_check_enabled": True,
             "description": "Balanced analysis",
         },
         ResearchDepth.DEEP: {
-            "max_time_minutes": 60,
-            "max_sources": 15,
-            "sources_per_round": 5,
-            "deep_dive_sources": 6,
-            "search_rounds": 3,
+            "max_time_minutes": 75,  # Increased time
+            "max_sources": 25,       # Increased from 15
+            "sources_per_round": 8,  # Increased from 5
+            "deep_dive_sources": 12, # Increased from 6
+            "search_rounds": 4,      # Increased from 3
             "fact_check_enabled": True,
             "description": "Thorough investigation",
         },
         ResearchDepth.EXHAUSTIVE: {
-            "max_time_minutes": 120,
-            "max_sources": 20,
-            "sources_per_round": 7,
-            "deep_dive_sources": 8,
-            "search_rounds": 4,
+            "max_time_minutes": 150, # Increased time
+            "max_sources": 35,       # Increased from 20
+            "sources_per_round": 10, # Increased from 7
+            "deep_dive_sources": 15, # Increased from 8
+            "search_rounds": 5,      # Increased from 4
             "fact_check_enabled": True,
             "description": "Comprehensive study",
         },

@@ -489,14 +489,15 @@ class EnhancedDeepResearcherAgent:
             # Calculate basic metrics
             word_count = len(clean_content.split())
             
-            # Create source data structure
+            # Create source data structure with expanded content
             source_data = {
                 "url": url,
                 "title": title,
-                "content": clean_content[:2000],  # Limit content length
+                "content": clean_content[:8000],  # Significantly increased content length
                 "relevance_score": 0.5,  # Default, will be enhanced with search metadata
                 "credibility_score": 0.5,  # Default scoring
-                "word_count": word_count
+                "word_count": word_count,
+                "full_content_available": len(clean_content) > 8000
             }
             
             # Enhance with search metadata if available

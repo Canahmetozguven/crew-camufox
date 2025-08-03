@@ -1007,9 +1007,10 @@ class DeepResearcherAgent:
             lines = [line.strip() for line in text_content.split("\n") if line.strip()]
             clean_content = "\n".join(lines)
 
-            content_data["content"] = clean_content
+            content_data["content"] = clean_content[:8000]  # Increased from default limit
             content_data["word_count"] = len(clean_content.split())
             content_data["char_count"] = len(clean_content)
+            content_data["full_content_available"] = len(clean_content) > 8000
 
             # Extract metadata
             content_data["metadata"] = self._extract_metadata(soup)
