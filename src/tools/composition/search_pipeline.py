@@ -189,8 +189,9 @@ class EnhancedSearchPipeline(ToolPipeline):
                     if engine in self.supported_engines and engine not in selected_engines:
                         selected_engines.append(engine)
         
-        # Calculate results per engine
-        results_per_engine = max(2, max_results // len(selected_engines))
+        # Calculate results per engine - allow each engine to contribute more results
+        # Instead of dividing, set a reasonable target per engine to get comprehensive coverage
+        results_per_engine = max(10, min(15, max_results // 2))  # Each engine gets 10-15 results
         
         query_data["selected_engines"] = selected_engines
         query_data["results_per_engine"] = results_per_engine
@@ -202,7 +203,7 @@ class EnhancedSearchPipeline(ToolPipeline):
         """Execute searches across multiple engines in parallel"""
         engines = query_data.get("selected_engines", ["google", "bing", "duckduckgo"])
         queries = query_data.get("all_query_variants", [query_data.get("primary_query", "")])
-        results_per_engine = query_data.get("results_per_engine", 5)
+        results_per_engine = query_data.get("results_per_engine", 15)  # Increased from 5 to 15
         
         # Create search tasks for parallel execution
         search_tasks = []
@@ -624,10 +625,10 @@ class EnhancedSearchPipeline(ToolPipeline):
         """Validate result quality and filter out low-quality results"""
         results = query_data.get("enhanced_results", [])
         
-        # Quality thresholds
-        min_relevance = context.get("min_relevance", 0.2) if context else 0.2
-        min_credibility = context.get("min_credibility", 0.3) if context else 0.3
-        min_confidence = context.get("min_confidence", 0.25) if context else 0.25
+        # Quality thresholds - relaxed for comprehensive research
+        min_relevance = context.get("min_relevance", 0.1) if context else 0.1  # Reduced from 0.2
+        min_credibility = context.get("min_credibility", 0.2) if context else 0.2  # Reduced from 0.3
+        min_confidence = context.get("min_confidence", 0.15) if context else 0.15  # Reduced from 0.25
         
         quality_results = []
         filtered_out = []
@@ -675,8 +676,14 @@ class EnhancedSearchPipeline(ToolPipeline):
             excluded_domains = context["excluded_domains"]
             results = [r for r in results if not any(domain in r.get("url", "") for domain in excluded_domains)]
         
-        # Apply final result limit
-        filtered_results = results[:max_results]
+        # Apply final result limit - increased for comprehensive research reports
+        # Don't apply strict limit for research purposes - let all quality results through
+        # Only limit if specifically requested in context
+        if context and "enforce_max_results" in context and context["enforce_max_results"]:
+            filtered_results = results[:max_results]
+        else:
+            # For research reports, use all quality results up to a reasonable limit
+            filtered_results = results[:min(len(results), 35)]  # Allow up to 35 sources for comprehensive research
         
         query_data["filtered_results"] = filtered_results
         return query_data

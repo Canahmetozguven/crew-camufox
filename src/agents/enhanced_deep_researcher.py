@@ -199,7 +199,7 @@ class EnhancedDeepResearcherAgent:
                 console.print(f"[yellow]🔍 Executing batch search for {len(search_terms)} queries...[/yellow]")
                 batch_results = await self.composition_manager.batch_search(
                     search_terms[:5],  # Limit to top 5 terms
-                    max_results_per_query=max_sources // len(search_terms[:5]),
+                    max_results_per_query=max(8, max_sources // 2),  # Each query gets substantial results
                     context=search_context
                 )
                 
@@ -393,7 +393,7 @@ class EnhancedDeepResearcherAgent:
                     }
 
         processed_sources = []
-        batch_size = 5
+        batch_size = 8  # Increased from 5 to process more sources efficiently
 
         for i in range(0, len(urls), batch_size):
             batch_urls = urls[i : i + batch_size]
@@ -429,15 +429,23 @@ class EnhancedDeepResearcherAgent:
                                 timeout=25.0,
                             )
                             print(f"DEBUG: Extracted data for {url}: {source_data}")
-                            if source_data and self._meets_quality_criteria_enhanced(source_data, quality_criteria):
-                                enhanced_source = await self._enhance_source_analysis(source_data)
-                                processed_sources.append(enhanced_source)
-                                console.print(
-                                    f"[green]✅ Enhanced processed: {enhanced_source.get('title', url)[:60]}...[/green]"
-                                )
+                            # More lenient quality checking - accept more sources for comprehensive research
+                            if source_data:
+                                # Apply basic quality check but be more permissive
+                                if (source_data.get("word_count", 0) > 50 and 
+                                    source_data.get("title") and 
+                                    len(source_data.get("content", "").strip()) > 100):
+                                    enhanced_source = await self._enhance_source_analysis(source_data)
+                                    processed_sources.append(enhanced_source)
+                                    console.print(
+                                        f"[green]✅ Enhanced processed: {enhanced_source.get('title', url)[:60]}...[/green]"
+                                    )
+                                else:
+                                    console.print(f"[yellow]⚠️ Basic quality check failed for: {url} (insufficient content)[/yellow]")
+                                    print(f"DEBUG: Source failed basic content check: {url}")
                             else:
-                                console.print(f"[yellow]⚠️ Enhanced quality check failed for: {url}[/yellow]")
-                                print(f"DEBUG: Source did not meet quality criteria: {url}")
+                                console.print(f"[yellow]⚠️ Enhanced extraction returned None for: {url}[/yellow]")
+                                print(f"DEBUG: Source extraction failed: {url}")
                         except asyncio.TimeoutError:
                             console.print(f"[red]❌ Enhanced timeout after 25s: {url}[/red]")
                             continue
@@ -464,11 +472,19 @@ class EnhancedDeepResearcherAgent:
         """Enhanced content extraction with search metadata integration"""
         
         try:
-            # Navigate to the page
-            await page.goto(url, wait_until="networkidle", timeout=30000)
+            # Navigate to the page with retries
+            try:
+                await page.goto(url, wait_until="networkidle", timeout=30000)
+            except Exception as nav_error:
+                # Try with load event instead of networkidle for problematic pages
+                try:
+                    await page.goto(url, wait_until="load", timeout=20000)
+                except Exception:
+                    console.print(f"[yellow]⚠️ Navigation failed for {url}, trying basic load...[/yellow]")
+                    await page.goto(url, timeout=15000)
             
             # Extract basic information
-            title = await page.title()
+            title = await page.title() or "Untitled"
             content_html = await page.content()
 
             # Parse with BeautifulSoup for content extraction
@@ -486,8 +502,17 @@ class EnhancedDeepResearcherAgent:
             lines = [line.strip() for line in text_content.split("\n") if line.strip()]
             clean_content = "\n".join(lines)
             
+            # Ensure we have some content
+            if not clean_content or len(clean_content.strip()) < 50:
+                # Try alternative extraction methods
+                main_content = soup.find("main") or soup.find("article") or soup.find("div", {"class": ["content", "main", "article"]})
+                if main_content:
+                    clean_content = main_content.get_text(separator="\n", strip=True)
+                    lines = [line.strip() for line in clean_content.split("\n") if line.strip()]
+                    clean_content = "\n".join(lines)
+            
             # Calculate basic metrics
-            word_count = len(clean_content.split())
+            word_count = len(clean_content.split()) if clean_content else 0
             
             # Create source data structure with expanded content
             source_data = {
