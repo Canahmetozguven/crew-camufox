@@ -19,6 +19,14 @@ from .camoufox_performance import (
     PERFORMANCE_PRESETS
 )
 
+try:
+    from .captcha_solver import AdvancedCaptchaSolver, CaptchaChallenge
+    from .anti_detection import AntiDetectionBrowserManager
+    from .search_integration import AdvancedSearchManager
+    ADVANCED_FEATURES_AVAILABLE = True
+except ImportError:
+    ADVANCED_FEATURES_AVAILABLE = False
+
 __all__ = [
     "EnhancedCamoufoxManager",
     "StealthProfile", 
@@ -31,3 +39,12 @@ __all__ = [
     "ResourceBlockingRule",
     "PERFORMANCE_PRESETS"
 ]
+
+# Add advanced features if available
+if ADVANCED_FEATURES_AVAILABLE:
+    __all__.extend([
+        "AdvancedCaptchaSolver",
+        "CaptchaChallenge", 
+        "AntiDetectionBrowserManager",
+        "AdvancedSearchManager"
+    ])
